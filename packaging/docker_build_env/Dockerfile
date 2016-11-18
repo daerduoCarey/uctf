@@ -13,6 +13,6 @@ RUN apt-get install -y python-rosinstall python-wstool
 RUN apt-get install -y libxslt1-dev libqwt-dev python-future libignition-transport-dev
 
 # from Ardupilot
-RUN apt-get install -y gawk make git arduino-core curl python-serial python-argparse openocd flex bison libncurses5-dev \
+RUN apt-get install -y gawk make git curl python-serial python-argparse openocd flex bison libncurses5-dev \
           autoconf texinfo build-essential libftdi-dev libtool zlib1g-dev \
           zip genromfs python-empy libc6-i386 g++ python-pip python-setuptools python-matplotlib python-serial python-scipy python-opencv python-numpy python-pyparsing ccache realpath
