@@ -2,6 +2,7 @@ PLND_ENABLED    1
 PLND_TYPE       2
 POS_XY_P        2
 VEL_XY_P        0.6
+FRAME_CLASS     1
 
 COMPASS_OFS_X   5
 COMPASS_OFS_Y   13
