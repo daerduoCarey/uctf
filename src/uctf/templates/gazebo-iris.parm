@@ -2,8 +2,6 @@ PLND_ENABLED    1
 PLND_TYPE       2
 POS_XY_P        2
 VEL_XY_P        0.6
-# Iris is X frame
-FRAME		0.0
 
 COMPASS_OFS_X   5
 COMPASS_OFS_Y   13
