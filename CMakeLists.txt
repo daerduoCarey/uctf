@@ -132,3 +132,5 @@ install(FILES
   "${CMAKE_CURRENT_BINARY_DIR}/setup.sh"
   DESTINATION share/${PROJECT_NAME}
 )
+
+add_subdirectory(plugins)
