@@ -27,7 +27,7 @@
 #include <gazebo/physics/PhysicsIface.hh>
 #include <gazebo/common/Events.hh>
 
-#include "plugins/SASCPlugin.hh"
+#include "SASCPlugin.hh"
 
 using namespace gazebo;
 
@@ -92,9 +92,9 @@ void SASCPlugin::Load(physics::WorldPtr _world, sdf::ElementPtr _sdf)
   this->dataPtr->world = _world;
 
   this->dataPtr->blueLaunchTime =
-    _world->SimTime() + gazebo::common::Time(this->dataPtr->interval, 0);
+    _world->GetSimTime() + gazebo::common::Time(this->dataPtr->interval, 0);
   this->dataPtr->goldLaunchTime =
-    _world->SimTime() + gazebo::common::Time(this->dataPtr->interval, 0);
+    _world->GetSimTime() + gazebo::common::Time(this->dataPtr->interval, 0);
 
   // listen to new model msgs
   this->dataPtr->node.reset(new transport::Node());
@@ -119,7 +119,7 @@ void SASCPlugin::OnUpdate()
   // look out for new models
   this->ProcessModelMsgs();
 
-  auto simTime = this->dataPtr->world->SimTime();
+  auto simTime = this->dataPtr->world->GetSimTime();
 
   if (simTime >= this->dataPtr->blueLaunchTime &&
       !this->dataPtr->blueLaunchQueue.empty())
@@ -142,7 +142,7 @@ void SASCPlugin::OnUpdate()
     }
   }
 
-  if (this->dataPtr->world->SimTime() >= this->dataPtr->goldLaunchTime)
+  if (this->dataPtr->world->GetSimTime() >= this->dataPtr->goldLaunchTime)
   {
     if (!this->dataPtr->goldLaunchQueue.empty())
     {
@@ -179,7 +179,7 @@ void SASCPlugin::ProcessModelMsgs()
     if (this->dataPtr->drones.find(msg.name()) != this->dataPtr->drones.end())
       continue;
 
-    auto m = this->dataPtr->world->ModelByName(msg.name());
+    auto m = this->dataPtr->world->GetModel(msg.name());
     if (m)
     {
       this->dataPtr->drones.insert(msg.name());
