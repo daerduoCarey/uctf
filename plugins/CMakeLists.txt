@@ -9,3 +9,4 @@ list(APPEND CMAKE_CXX_FLAGS "${GAZEBO_CXX_FLAGS}")
 add_library(SASCPlugin SHARED SASCPlugin.cc)
 target_link_libraries(SASCPlugin ${GAZEBO_LIBRARIES})
 
+install(TARGETS SASCPlugin DESTINATION ${CMAKE_INSTALL_PREFIX}/share/${PROJECT_NAME}/plugins)
