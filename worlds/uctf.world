@@ -193,7 +193,8 @@
     </gui>
 
     <plugin name="sasc" filename="libSASCPlugin.so">
-      <interval>10</interval>
+      <interval>30</interval>
+      <distance>5</distance>
     </plugin>
   </world>
 

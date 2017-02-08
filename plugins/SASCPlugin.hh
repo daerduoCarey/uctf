@@ -29,6 +29,7 @@ namespace gazebo
 {
   // Forward declare private data class.
   class SASCPluginPrivate;
+  class SASCLauncher;
 
   class GAZEBO_VISIBLE SASCPlugin : public WorldPlugin
   {
@@ -54,7 +55,7 @@ namespace gazebo
     public: void OnModel(ConstModelPtr &_msg);
 
     /// \brief Process model messages and check for fixed wing drones
-    public: void ProcessModelMsgs();
+    private: void ProcessModelMsgs();
 
     /// \brief Main physics update loop
     private: void OnUpdate();

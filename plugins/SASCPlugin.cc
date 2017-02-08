@@ -33,6 +33,13 @@ using namespace gazebo;
 
 GZ_REGISTER_WORLD_PLUGIN(SASCPlugin)
 
+class gazebo::SASCLauncher
+{
+  public: physics::ModelPtr drone;
+  public: common::Time launchTime;
+  public: ignition::math::Vector3d launchPos;
+};
+
 class gazebo::SASCPluginPrivate
 {
   /// \brief Pointer to the update event connection.
@@ -41,14 +48,14 @@ class gazebo::SASCPluginPrivate
   /// \brief All the blue vehicles that need to be launched
   public: std::list<physics::ModelPtr> blueLaunchQueue;
   public: std::list<physics::JointPtr> blueLaunchJoints;
-  public: physics::ModelPtr blueLaunched;
-  public: gazebo::common::Time blueLaunchTime;
 
   /// \brief All the gold vehicles that need to be launched
   public: std::list<physics::ModelPtr> goldLaunchQueue;
   public: std::list<physics::JointPtr> goldLaunchJoints;
-  public: physics::ModelPtr goldLaunched;
-  public: gazebo::common::Time goldLaunchTime;
+
+  /// \brief launchers
+  public: std::list<SASCLauncher> blueLaunchers;
+  public: std::list<SASCLauncher> goldLaunchers;
 
   public: transport::NodePtr node;
   public: transport::SubscriberPtr newEntitySub;
@@ -82,8 +89,7 @@ void SASCPlugin::Load(physics::WorldPtr _world, sdf::ElementPtr _sdf)
     this->dataPtr->interval = _sdf->Get<double>("interval");
   }
 
-  // currently not used.
-  this->dataPtr->distance = 0;
+  this->dataPtr->distance = 5;
   if (_sdf->HasElement("distance"))
   {
     this->dataPtr->distance = _sdf->Get<double>("distance");
@@ -91,10 +97,21 @@ void SASCPlugin::Load(physics::WorldPtr _world, sdf::ElementPtr _sdf)
 
   this->dataPtr->world = _world;
 
-  this->dataPtr->blueLaunchTime =
-    _world->GetSimTime() + gazebo::common::Time(this->dataPtr->interval, 0);
-  this->dataPtr->goldLaunchTime =
-    _world->GetSimTime() + gazebo::common::Time(this->dataPtr->interval, 0);
+  // there are two launchers in each team by default
+  for (unsigned int i = 0; i < 2u; ++i)
+  {
+    SASCLauncher launcher;
+    launcher.launchTime = this->dataPtr->world->GetSimTime() +
+        gazebo::common::Time(this->dataPtr->interval, 0);
+    this->dataPtr->blueLaunchers.push_back(launcher);
+  }
+  for (unsigned int i = 0; i < 2u; ++i)
+  {
+    SASCLauncher launcher;
+    launcher.launchTime = this->dataPtr->world->GetSimTime() +
+        gazebo::common::Time(this->dataPtr->interval, 0);
+    this->dataPtr->goldLaunchers.push_back(launcher);
+  }
 
   // listen to new model msgs
   this->dataPtr->node.reset(new transport::Node());
@@ -121,12 +138,23 @@ void SASCPlugin::OnUpdate()
 
   auto simTime = this->dataPtr->world->GetSimTime();
 
-  if (simTime >= this->dataPtr->blueLaunchTime &&
-      !this->dataPtr->blueLaunchQueue.empty())
+  for (auto &launcher : this->dataPtr->blueLaunchers)
   {
-    if (!this->dataPtr->blueLaunchQueue.empty())
+    if (launcher.drone)
     {
-      this->dataPtr->blueLaunched = this->dataPtr->blueLaunchQueue.front();
+      if (simTime >= launcher.launchTime &&
+          launcher.drone->GetWorldPose().Ign().Pos().Distance(launcher.launchPos) >
+          this->dataPtr->distance)
+      {
+        std::cerr << "blue drone cleared launcher: "
+            << launcher.drone->GetName() << std::endl;
+        launcher.drone.reset();
+      }
+    }
+
+    if (!launcher.drone && !this->dataPtr->blueLaunchQueue.empty())
+    {
+      launcher.drone = this->dataPtr->blueLaunchQueue.front();
       this->dataPtr->blueLaunchQueue.pop_front();
 
       auto joint = this->dataPtr->blueLaunchJoints.front();
@@ -135,18 +163,34 @@ void SASCPlugin::OnUpdate()
       std::string jointName = joint->GetName();
 
       joint.reset();
-      this->dataPtr->blueLaunched->RemoveJoint(jointName);
+      launcher.drone->RemoveJoint(jointName);
 
-      this->dataPtr->blueLaunchTime = simTime +
+      launcher.launchTime = simTime +
           gazebo::common::Time(this->dataPtr->interval, 0);
+      launcher.launchPos = launcher.drone->GetWorldPose().Ign().Pos();
+
+      std::cerr << "blue drone launching: "
+          << launcher.drone->GetName() << std::endl;
     }
   }
 
-  if (this->dataPtr->world->GetSimTime() >= this->dataPtr->goldLaunchTime)
+  for (auto &launcher : this->dataPtr->goldLaunchers)
   {
-    if (!this->dataPtr->goldLaunchQueue.empty())
+    if (launcher.drone)
     {
-      this->dataPtr->goldLaunched = this->dataPtr->goldLaunchQueue.front();
+      if (simTime >= launcher.launchTime &&
+          launcher.drone->GetWorldPose().Ign().Pos().Distance(launcher.launchPos) >
+          this->dataPtr->distance)
+      {
+        std::cerr << "gold drone cleared launcher: "
+            << launcher.drone->GetName() << std::endl;
+        launcher.drone.reset();
+      }
+    }
+
+    if (!launcher.drone && !this->dataPtr->goldLaunchQueue.empty())
+    {
+      launcher.drone = this->dataPtr->goldLaunchQueue.front();
       this->dataPtr->goldLaunchQueue.pop_front();
 
       auto joint = this->dataPtr->goldLaunchJoints.front();
@@ -155,10 +199,14 @@ void SASCPlugin::OnUpdate()
       std::string jointName = joint->GetName();
 
       joint.reset();
-      this->dataPtr->goldLaunched->RemoveJoint(jointName);
+      launcher.drone->RemoveJoint(jointName);
 
-      this->dataPtr->goldLaunchTime = simTime +
+      launcher.launchTime = simTime +
           gazebo::common::Time(this->dataPtr->interval, 0);
+      launcher.launchPos = launcher.drone->GetWorldPose().Ign().Pos();
+
+      std::cerr << "gold drone launching: "
+          << launcher.drone->GetName() << std::endl;
     }
   }
 }
@@ -241,4 +289,3 @@ void SASCPlugin::OnModel(ConstModelPtr &_msg)
   std::lock_guard<std::mutex> lock(this->dataPtr->mutex);
   this->dataPtr->modelMsgs.push_back(*_msg.get());
 }
-
